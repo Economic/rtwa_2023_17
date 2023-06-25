@@ -8,5 +8,6 @@ conflict_prefer("filter", "dplyr", quiet = TRUE)
 # packages for this analysis
 suppressPackageStartupMessages({
   library(tidyverse)
+  library(haven)
 })
 

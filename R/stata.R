@@ -14,8 +14,10 @@ do_file_target <- function(do_file,
   cmd <- paste(.stata_path, "-b do", do_file, stata_args)
   system(cmd)
   
+  # remove log file
   if (.remove_log) {
-    file.remove(paste0(file_path_sans_ext(basename(do_file)), ".log"))
+    file_base <- fs::path_ext_remove(basename(do_file))
+    file.remove(paste0(file_base, ".log"))
   }
   
   .outputs

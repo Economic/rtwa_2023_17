@@ -57,6 +57,4 @@ syntax, mw_csv(string) tipmw_csv(string)
 
 end
 
-
 clean_state_mw, `stata_arguments'
-
