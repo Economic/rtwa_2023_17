@@ -47,7 +47,7 @@ syntax, ///
   }
   
   use `microdata_file', clear 
-  gen nom_wage_growth0 = 0.04
+  gen nom_wage_growth0 = 0.05
 
   * merge counterfactual state minimum wages
   merge m:1 pwstate using `active_state_mw', assert(3) nogenerate

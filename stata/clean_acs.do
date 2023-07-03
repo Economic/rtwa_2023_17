@@ -7,9 +7,10 @@ local stata_arguments = subinstr("`stata_arguments'", " ", ") ", .)
 
 capture program drop clean_acs_base
 program define clean_acs_base
+syntax, geo(string)
 
   * clean ACS data
-  use /data/acs/acs_cd116_cps_2022_dist.dta, clear
+  use /data/acs/acs_`geo'_cps_2022_dist.dta, clear
 
   keep if pwstate > 0
   drop perwt0 perwt1 hrwage0 hrwage1 met2013 nfams subfam foodstmp racamind racblk ///
@@ -29,12 +30,17 @@ program define clean_acs_base
 
   *define demographic categories
   *age
-  gen teens = irecode(age,20)
+  gen teens = age >= 20
   lab var teens "Teenager flag"
   label define l_teens 0 "Teenager" 1 "Age 20 or older"
   label values teens l_teens
 
-  gen agec = irecode(age,25,40,55)
+  gen agec = .
+  replace agec = 0 if age >= 16 & age <= 24
+  replace agec = 1 if age >= 25 & age <= 39
+  replace agec = 2 if age >= 40 & age <= 54
+  replace agec = 3 if age >= 55
+  
   lab var agec "Age category"
   label define agec 0 "Age 16 to 24" 1 "Age 25 to 39" 2 "Age 40 to 54" ///
     3 "Age 55 or older"
@@ -134,13 +140,23 @@ program define clean_acs_base
   drop marst
 
   *Family income and poverty
-  gen faminc = irecode(ftotinc,25000,50000,75000,100000,150000)
+  gen faminc = .
+  replace faminc = 0 if ftotinc < 25000
+  replace faminc = 1 if ftotinc >= 25000  & ftotinc < 50000
+  replace faminc = 2 if ftotinc >= 50000  & ftotinc < 75000
+  replace faminc = 3 if ftotinc >= 75000  & ftotinc < 100000
+  replace faminc = 4 if ftotinc >= 100000 & ftotinc < 150000
+  replace faminc = 5 if ftotinc >= 150000 & ftotinc != .
   label define l_faminc 0 "Less than $25,000" 1 "$25,000 - $49,999" 2 "$50,000 - $74,999" ///
     3 "$75,000 - $99,999" 4 "$100,000 - $149,999" 5 "$150,000 or more"
   label values faminc l_faminc
   lab var faminc "Family income category"
 
-  gen povstat = irecode(poverty,100,200,400)
+  gen povstat = .
+  replace povstat = 0 if poverty < 100 
+  replace povstat = 1 if poverty >= 100 & poverty < 200
+  replace povstat = 2 if poverty >= 200 & poverty < 400
+  replace povstat = 3 if poverty >= 400 & poverty != .
   label define l_povstat 0 "In Poverty" 1 "100 - 199% poverty" 2 "200-399% poverty" 3 "400%+ poverty"
   label values povstat l_povstat
   lab var povstat "Family income-to-poverty status"
@@ -154,7 +170,10 @@ program define clean_acs_base
   label values worker l_worker
 
   *work hours
-  gen hourc = irecode(uhrswork,20,35)
+  gen hourc = .
+  replace hourc = 0 if uhrswork < 20 
+  replace hourc = 1 if uhrswork >= 20 & uhrswork < 35
+  replace hourc = 2 if uhrswork >= 35 & uhrswork != .
   label define l_hourc 0 "Part time (<20 hours per week)" 1 "Mid time (20-34 hours)" 2 "Full time (35+ hours)"
   label values hourc l_hourc
   lab var hourc "Usual weekly work hours category"
@@ -253,11 +272,11 @@ program define clean_acs_base
   * PW PUMA
   lab var pwpuma "Place of work PUMA"
 
-  keep year pwstate pwpuma statefips hrwage0 perwt0 female age agec racec poc teens childc edc faminc povstat hourc indc tipc worker uhrswork  sectc
+  keep year pwstate pwpuma puma statefips hrwage0 perwt0 female age agec racec poc teens childc edc faminc povstat hourc indc tipc worker uhrswork sectc
   compress
-  save ${input_clean_dir}clean_acs_base.dta, replace
+  save ${input_clean_dir}clean_acs_`geo'_base.dta, replace
 
 end
 
-clean_acs_base 
+clean_acs_base, `stata_arguments'
  

@@ -1,0 +1,195 @@
+---
+title: "Stats / Fact-checks for 'why US needs a $17 minimum wage'"
+format: html
+theme: cosmo
+date: "`r Sys.Date()`"
+date-format: long
+execute:
+  echo: false
+  output: false
+---
+
+\captionsetup[table]{labelformat=empty}
+\vspace{-3em}
+```{r setup}
+library(tidyverse)
+library(targets)
+library(bea.R)
+
+microdata_results <- tar_read(prep_acs_data)
+```
+
+```{r mw_sim results}
+cpi_deflator <- 305.535 / 344.789
+
+results <- microdata_results %>% 
+  mutate(
+    weight = perwt6,
+    d_affected = direct6 == 1,
+    i_affected = indirect6 == 1,
+    affected = d_affected == 1 | i_affected == 1,
+    ann_wage_change = d_annual_inc6
+  ) %>% 
+  # getting a weird haven/vctrs error here
+  haven::zap_labels() %>% 
+  mutate(
+    poverty = povstat == 0,
+    black = racec == 2,
+    hispanic = racec == 3,
+    black_hispanic = black == 1 | hispanic == 1,
+    black_hispanic_female = (black == 1 | hispanic == 1) & female == 1,
+    prime_age = age >= 25 & age <= 54,
+    teen = age <= 19,
+    full_time = hourc == 2,
+    some_college = edc >= 3,
+    parent = childc <= 2
+  )
+
+stats_by_group <- function(group) {
+  counts_shares <- results %>% 
+    group_by(group = .data[[group]]) %>% 
+    summarize(
+      count_affected = sum(affected * weight),
+      share_affected = weighted.mean(affected, w = weight)
+    ) %>% 
+    mutate(group_share_affected = count_affected / sum(count_affected)) %>% 
+    filter(group == 1) %>% 
+    mutate(group := {{group}})
+  
+  wage_increases <- results %>% 
+    filter(.data[[group]] == 1 & affected == 1) %>% 
+    summarize(
+      wage_change_avg_ann = weighted.mean(ann_wage_change, w = weight) * cpi_deflator,
+      wage_change_total_ann = sum(ann_wage_change * weight) * cpi_deflator
+    ) %>% 
+    mutate(group := {{group}})
+  
+  counts_shares %>% 
+    full_join(wage_increases, by = "group")
+}
+
+groups <- c(
+  "all",
+  "poverty",
+  "black",
+  "black_hispanic",
+  "black_hispanic_female",
+  "hispanic",
+  "prime_age",
+  "teen",
+  "full_time",
+  "some_college",
+  "parent",
+  "female"
+)
+group_stats <- map(groups, stats_by_group) %>% 
+  list_rbind() %>% 
+  mutate(across(
+    matches("share"), 
+    ~ scales::label_percent(accuracy = 1)(.x)
+  )) %>%
+  mutate(wage_change_total_ann = wage_change_total_ann / 10^9) %>% 
+  mutate(wage_change_avg_ann = round(wage_change_avg_ann / 100) * 100) %>% 
+  mutate(across(
+    matches("^wage_change"), 
+    ~ scales::label_dollar(accuracy = 1)(.x)
+  )) %>% 
+  mutate(count_affected = scales::label_comma(accuracy = 1)(
+    count_affected / 10^6
+  ))
+
+
+extract_stat <- function(group, stat) {
+  group_stats %>% 
+    filter(.data[["group"]] == {{group}}) %>% 
+    pull(.data[[stat]])
+}
+```
+
+```{r productivity}
+bea_key <- Sys.getenv("BEA_API_KEY")
+
+bea_grab <- function(tablename) {
+  bea_specs <- list(
+    'UserID' = bea_key,
+    'Method' = 'GetData',
+    'datasetname' = 'NIPA',
+    'TableName' = tablename,
+    'Frequency' = 'A',
+    'Year' = 'X'
+  )
+  beaGet(bea_specs, asWide = FALSE) %>% 
+    as_tibble()
+}
+
+bea_ndp <- bea_grab("T10705") %>% 
+  filter(LineNumber == 14) %>% 
+  transmute(year = as.numeric(TimePeriod), ndp = DataValue)
+
+bls_hours <- read_csv("inputs_raw/total-economy-hours-employment.csv") %>% 
+  filter(
+    Component == "Total U.S. economy",
+    Basis == "All workers",
+    Measure == "Hours worked"
+  ) %>% 
+  select(year = Year, hours = Value) %>% 
+  filter(year >= 1948, year <= 2022) %>% 
+  mutate(hours = as.numeric(hours)) %>% 
+  summarize(hours = mean(hours), .by = year)
+
+productivity <- bea_ndp %>% 
+  full_join(bls_hours, by = "year") %>% 
+  mutate(prod = ndp / hours)
+
+prod_base <- productivity %>% 
+  filter(year == 1967) %>% 
+  pull(prod)
+
+mw_data <- productivity %>% 
+  add_row(year = 2023) %>% 
+  mutate(prod_mw = case_when(
+    year == 1968 ~ 1.60,
+    year >= 1969 ~ 1.60 * lag(prod) / prod_base 
+  )) %>% 
+  filter(!is.na(prod_mw))
+
+mw_1968 <- "$1.60"
+mw_2023_prod <- mw_data %>% 
+  filter(year == 2023) %>% 
+  pull(prod_mw) %>% 
+  scales::label_dollar()()
+```
+
+## effects of $17 in 2028
+* `r extract_stat("all", "count_affected")` million workers affected, 
+`r extract_stat("all", "share_affected")` of the U.S. workforce
+* affected year-round workers earn additional 
+`r extract_stat("all", "wage_change_avg_ann")` per year
+* generate `r extract_stat("all", "wage_change_total_ann")` billion in higher wages
+* share of below poverty workers affected:
+`r extract_stat("poverty", "share_affected")`
+* share of Black workers affected: 
+`r extract_stat("black", "share_affected")`
+* share of Latino workers affected: 
+`r extract_stat("hispanic", "share_affected")`
+* share of affected that are Black/Hispanic female: 
+`r extract_stat("black_hispanic_female", "group_share_affected")`
+* average annual wage increase for Black workers:
+`r extract_stat("black", "wage_change_avg_ann")`
+* share of affected that are ages 25-54:
+`r extract_stat("prime_age", "group_share_affected")`
+* share of affected that are teenagers:
+`r extract_stat("teen", "group_share_affected")`
+* share of affected that are women:
+`r extract_stat("female", "group_share_affected")`
+* share of affected that work full-time:
+`r extract_stat("full_time", "group_share_affected")`
+* share of affected that have some college experience:
+`r extract_stat("some_college", "group_share_affected")`
+* share of affected that have children:
+`r extract_stat("parent", "group_share_affected")`
+
+## other stuff
+* Value of 2023 fed min wage had it been indexed to productivity since 1968 = 
+`r mw_2023_prod`
+

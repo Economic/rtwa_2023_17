@@ -1,0 +1,82 @@
+---
+title: "Minimum wage productivity"
+format: html
+theme: cosmo
+date: "`r Sys.Date()`"
+date-format: long
+execute:
+  echo: false
+---
+
+\captionsetup[table]{labelformat=empty}
+\vspace{-3em}
+```{r}
+#| output: false
+library(tidyverse)
+library(scales)
+library(gt)
+library(kableExtra)
+library(hrbrthemes)
+library(bea.R)
+
+bea_key <- Sys.getenv("BEA_API_KEY")
+
+bea_grab <- function(tablename) {
+  bea_specs <- list(
+    'UserID' = bea_key,
+    'Method' = 'GetData',
+    'datasetname' = 'NIPA',
+    'TableName' = tablename,
+    'Frequency' = 'A',
+    'Year' = 'X'
+  )
+  beaGet(bea_specs, asWide = FALSE) %>% 
+    as_tibble()
+}
+
+bea_ndp <- bea_grab("T10705") %>% 
+  filter(LineNumber == 14) %>% 
+  transmute(year = as.numeric(TimePeriod), ndp = DataValue)
+
+bls_hours <- read_csv("inputs_raw/total-economy-hours-employment.csv") %>% 
+  filter(
+    Component == "Total U.S. economy",
+    Basis == "All workers",
+    Measure == "Hours worked"
+  ) %>% 
+  select(year = Year, hours = Value) %>% 
+  filter(year >= 1948, year <= 2022) %>% 
+  mutate(hours = as.numeric(hours)) %>% 
+  summarize(hours = mean(hours), .by = year)
+
+productivity <- bea_ndp %>% 
+  full_join(bls_hours, by = "year") %>% 
+  mutate(prod = ndp / hours)
+```
+
+```{r}
+prod_base <- productivity %>% 
+  filter(year == 1967) %>% 
+  pull(prod)
+
+mw_data <- productivity %>% 
+  add_row(year = 2023) %>% 
+  mutate(prod_mw = case_when(
+    year == 1968 ~ 1.60,
+    year >= 1969 ~ 1.60 * lag(prod) / prod_base 
+  )) %>% 
+  filter(!is.na(prod_mw))
+
+ mw_data %>% 
+  ggplot(aes(x = year, y = prod_mw)) +
+  geom_line() +
+  scale_y_continuous(labels = label_dollar(), breaks = seq(0,24,2)) +
+  hrbrthemes::theme_ipsum() +
+  labs(x = NULL, y = NULL)
+ 
+ mw_data %>%
+   mutate(prod_mw = scales::label_dollar()(prod_mw)) %>% 
+   select(Year = year, 'Productivity-indexed minimum' = prod_mw) %>% 
+   gt()
+```
+

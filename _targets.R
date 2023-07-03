@@ -13,10 +13,12 @@ tar_plan(
   tar_file(dofile_clean_policy_schedules, "stata/clean_policy_schedules.do"),
   tar_file(dofile_clean_cps, "stata/clean_cps.do"),
   tar_file(dofile_clean_acs, "stata/clean_acs.do"),
+  tar_file(dofile_clean_acs_cd118, "stata/clean_acs_cd118.do"),
   tar_file(dofile_run_model, "stata/run_model.do"),
   
   # do-file data inputs
   tar_file(pwpumas_dta, "inputs_raw/pwpumas.dta"),
+  tar_file(geocorr_puma_cd118, "inputs_raw/geocorr2022_puma2012_cd118.csv"),
   tar_file(state_mw_csv, "inputs_raw/mw_projections_state.csv"),
   tar_file(state_tipmw_csv, "inputs_raw/tipmw_projections_state.csv"),
   tar_file(cpi_proj_csv, "inputs_raw/CPI_projections_2_2023.csv"),
@@ -71,9 +73,17 @@ tar_plan(
                    .outputs = "inputs_clean/clean_cps_base.dta")
   ),
   tar_file(
-    acs_base, 
+    acs_state_base, 
     do_file_target(dofile_clean_acs,
-                   .outputs = "inputs_clean/clean_acs_base.dta")
+                   geo = "state",
+                   .outputs = "inputs_clean/clean_acs_state_base.dta")
+  ),
+  tar_file(
+    acs_cd118_base,
+    do_file_target(dofile_clean_acs_cd118,
+                   puma_cd_csv = geocorr_puma_cd118,
+                   acs_source_dta = acs_state_base,
+                   .outputs = "inputs_clean/clean_acs_cd118_base.dta")
   ),
   
   # run CPS model
@@ -89,25 +99,45 @@ tar_plan(
                    state_mw_file = state_mw_data,
                    .outputs = "outputs/model_run_microdata_cps_rtwa_17_2028_ofw.dta")
   ),
-  
   # run ACS model
   tar_file(
-    acs_cd116_rtwa_17_2028_ofw,
+    acs_state_rtwa_17_2028_ofw,
     do_file_target(dofile_run_model,
-                   microdata_file = acs_base,
-                   data_stub = "acs_cd116",
+                   microdata_file = acs_state_base,
+                   data_stub = "acs_state",
                    policy_name = "rtwa_17_2028_ofw",
                    policy_schedule_file = policy_schedules,
                    cpi_file = cpi_proj_data,
                    pop_file = pop_proj_data,
                    state_mw_file = state_mw_data,
                    local_mw_file = substate_mw_data,
-                   .outputs = "outputs/model_run_microdata_acs_cd116_rtwa_17_2028_ofw.dta")
+                   .outputs = "outputs/model_run_microdata_acs_state_rtwa_17_2028_ofw.dta")
   ),
   
-  cps_microdata = convert_results_rds(cps_rtwa_17_2028_ofw),
-  acs_microdata = convert_results_rds(acs_cd116_rtwa_17_2028_ofw),
+  # convert dta to feather
+  tar_format_feather(
+    cps_microdata, 
+    convert_from_dta(cps_rtwa_17_2028_ofw)
+  ),
+  tar_format_feather(
+    acs_microdata, 
+    convert_from_dta(acs_state_rtwa_17_2028_ofw)
+  ),
   
-  prep_acs_data = prep_acs_results(acs_microdata, cps_microdata)
+  # pin ACS workforce totals to ACS and refine model results
+  tar_format_feather(
+    acs_results_microdata, 
+    prep_acs_results(acs_microdata, cps_microdata)
+  ),
+  
+  # create state-specific results
+  state_summary_results = create_state_results(acs_results_microdata),
+  
+  # create state-specific and national tables
+  tar_file(
+    state_spreadsheet,
+    create_state_spreadsheet(state_summary_results, 
+                             "outputs/rtwa_17_2028_state_tables.xlsx")
+  )
 
 )
