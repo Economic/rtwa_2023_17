@@ -120,7 +120,7 @@ add_state_worksheet <- function(workbook, state, data, notes, source) {
     wb_merge_cells(rows = 76, cols = 1:9) %>%
     wb_add_data(x = notes, startRow = 76) %>% 
     wb_add_cell_style(dims = "A76", wrapText = "1") %>% 
-    wb_set_row_heights(rows = 76, heights = 50) %>% 
+    wb_set_row_heights(rows = 76, heights = 65) %>% 
     wb_merge_cells(rows = 77, cols = 1:9) %>% 
     wb_add_cell_style(dims = "A77", wrapText = "1") %>% 
     wb_add_data(x = source, startRow = 77)
@@ -228,7 +228,7 @@ add_state_summary_worksheet <- function(workbook, data, notes, source) {
     wb_merge_cells(rows = 55, cols = 1:11) %>%
     wb_add_data(x = notes, startRow = 55) %>% 
     wb_add_cell_style(dims = "A55", wrapText = "1") %>% 
-    wb_set_row_heights(rows = 55, heights = 50) %>% 
+    wb_set_row_heights(rows = 55, heights = 65) %>% 
     wb_merge_cells(rows = 56, cols = 1:11) %>% 
     wb_add_cell_style(dims = "A56", wrapText = "1") %>% 
     wb_add_data(x = source, startRow = 56)
