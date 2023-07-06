@@ -4,7 +4,7 @@ source("./packages.R")
 ## Load your R files
 lapply(list.files("./R", full.names = TRUE), source)
 
-tar_plan(
+list(
   # do-file targets
   tar_file(dofile_clean_substate_mw, "stata/clean_substate_mw.do"),
   tar_file(dofile_clean_state_mw, "stata/clean_state_mw.do"),
@@ -116,27 +116,30 @@ tar_plan(
   
   # convert dta to feather
   tar_format_feather(
-    cps_microdata, 
+    results_cps_raw_microdata, 
     convert_from_dta(cps_rtwa_17_2028_ofw)
   ),
   tar_format_feather(
-    acs_microdata, 
+    results_acs_raw_microdata, 
     convert_from_dta(acs_state_rtwa_17_2028_ofw)
   ),
   
   # pin ACS workforce totals to ACS and refine model results
   tar_format_feather(
-    acs_results_microdata, 
-    prep_acs_results(acs_microdata, cps_microdata)
+    results_acs_refined_microdata, 
+    prep_acs_results(results_acs_raw_microdata, results_cps_raw_microdata)
   ),
   
   # create state-specific results
-  state_summary_results = create_state_results(acs_results_microdata),
+  tar_target(
+    results_state_summary, 
+    create_state_results(results_acs_refined_microdata)
+  ),
   
   # create state-specific and national tables
   tar_file(
-    state_spreadsheet,
-    create_state_spreadsheet(state_summary_results, 
+    spreadsheet_state,
+    create_state_spreadsheet(results_state_summary, 
                              "outputs/rtwa_17_2028_state_tables.xlsx")
   )
 
