@@ -17,12 +17,20 @@ list(
   tar_file(dofile_run_model, "stata/run_model.do"),
   
   # do-file data inputs
+  # hand-coded by Dave Cooper
   tar_file(pwpumas_dta, "inputs_raw/pwpumas.dta"),
+  # Geocorr 2022
   tar_file(geocorr_puma_cd118, "inputs_raw/geocorr2022_puma2012_cd118.csv"),
+  # https://www2.census.gov/programs-surveys/acs/data/2021/CD118_Data_Profiles/ALL_CD%20by%20Nation/
+  tar_file(acs_tables_cd118, "inputs_raw/DP03_1yr_500.csv"),
+  # from EPI EARN projections
   tar_file(state_mw_csv, "inputs_raw/mw_projections_state.csv"),
   tar_file(state_tipmw_csv, "inputs_raw/tipmw_projections_state.csv"),
+  # from CBO
   tar_file(cpi_proj_csv, "inputs_raw/CPI_projections_2_2023.csv"),
+  # Census somewhere?
   tar_file(pop_proj_csv, "inputs_raw/pop_projections_8_2020.csv"),
+  # scenario inputs
   tar_file(policy_schedules_csv, "inputs_raw/all_scenarios.csv"),
   
   # clean state-level mw projections
@@ -81,6 +89,7 @@ list(
   tar_file(
     acs_cd118_base,
     do_file_target(dofile_clean_acs_cd118,
+                   acs_tables_csv = acs_tables_cd118,
                    puma_cd_csv = geocorr_puma_cd118,
                    acs_source_dta = acs_state_base,
                    .outputs = "inputs_clean/clean_acs_cd118_base.dta")
@@ -114,6 +123,21 @@ list(
                    .outputs = "outputs/model_run_microdata_acs_state_rtwa_17_2028_ofw.dta")
   ),
   
+  # run ACS CD 118 model
+  tar_file(
+    acs_cd118_rtwa_17_2028_ofw,
+    do_file_target(dofile_run_model,
+                   microdata_file = acs_cd118_base,
+                   data_stub = "acs_cd118",
+                   policy_name = "rtwa_17_2028_ofw",
+                   policy_schedule_file = policy_schedules,
+                   cpi_file = cpi_proj_data,
+                   pop_file = pop_proj_data,
+                   state_mw_file = state_mw_data,
+                   local_mw_file = substate_mw_data,
+                   .outputs = "outputs/model_run_microdata_acs_cd118_rtwa_17_2028_ofw.dta")
+  ),
+  
   # convert dta to feather
   tar_format_feather(
     results_cps_raw_microdata, 
@@ -123,11 +147,19 @@ list(
     results_acs_raw_microdata, 
     convert_from_dta(acs_state_rtwa_17_2028_ofw)
   ),
+  tar_format_feather(
+    results_acs_cd118_raw_microdata, 
+    convert_from_dta(acs_cd118_rtwa_17_2028_ofw)
+  ),
   
   # pin ACS workforce totals to ACS and refine model results
   tar_format_feather(
     results_acs_refined_microdata, 
     prep_acs_results(results_acs_raw_microdata, results_cps_raw_microdata)
+  ),
+  tar_format_feather(
+    results_acs_cd118_refined_microdata, 
+    prep_acs_results(results_acs_cd118_raw_microdata, results_cps_raw_microdata)
   ),
   
   # create state-specific results
@@ -141,6 +173,15 @@ list(
     spreadsheet_state,
     create_state_spreadsheet(results_state_summary, 
                              "outputs/rtwa_17_2028_state_tables.xlsx")
+  ),
+  
+  # create CD118-specific results
+  tar_target(
+    results_cd118_summary,
+    create_cd118_results(
+      cd_microdata = results_acs_cd118_refined_microdata,
+      state_microdata = results_acs_refined_microdata
+    )
   )
 
 )

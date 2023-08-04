@@ -16,7 +16,110 @@ library(tidyverse)
 library(targets)
 library(bea.R)
 
-microdata_results <- tar_read(prep_acs_data)
+microdata_results <- tar_read(results_acs_refined_microdata)
+```
+
+```{r cps}
+state_15_list <- c(
+  "CA", "CT", "DE", "FL", "HI", "IL", "MD", "MA", "NE", "NJ", "NY", "RI", "DC"
+)
+
+state_emp_counts <- epiextractr::load_basic(2022) %>% 
+  filter(emp == 1, basicwgt > 0) %>% 
+  summarize(count = sum(basicwgt / 12), .by = statefips) %>% 
+  mutate(state_abb = as.character(haven::as_factor(statefips)))
+
+state_15_counts <- state_emp_counts %>% 
+  mutate(state_15 = if_else(state_abb %in% state_15_list, 1, 0)) %>% 
+  summarize(count = sum(count), .by = state_15) %>% 
+  mutate(share = count / sum(count))
+
+state_ofw_list <- c("AK", "CA", "MN", "MT", "NV", "OR", "WA")
+state_213_list <- c("AL", "AR", "DE", "GA", "IN", "KS", "KY", "LA", "MS", "NE", "NM", "NC", "OK", "PA", "SC", "TN", "TX", "UT", "VA", "WV", "WI", "WY")
+tip_indocc_list <- c(4120,4130)
+tip_ind_list <- c(8580,8590,8660,8670,8680,8690,8970,8980,8990,9090)
+tip_occ_list <- c(4040,4110,4400,4500,4510,4521,4522,4525)
+
+state_tip_avg_pay <- epiextractr::load_org(2022) %>% 
+  filter(wageotc > 0) %>% 
+  mutate(state_abb = as.character(haven::as_factor(statefips))) %>% 
+  mutate(tipped = case_when(
+    ind17 %in% tip_ind_list & occ18 %in% tip_indocc_list ~ 1,
+    occ18 %in% tip_occ_list ~ 1,
+    .default = 0
+  )) %>% 
+  mutate(state_status = case_when(
+    state_abb %in% state_ofw_list ~ "One Fair Wage",
+    state_abb %in% state_213_list ~ "$2.13",
+    .default = "Other"
+  )) %>% 
+  filter(occ18 %in% c(4040, 4110)) %>% 
+  summarize(avg_wage = weighted.mean(wageotc, w = orgwgt), .by = c(tipped, state_status))
+
+state_codes <- tigris::fips_codes %>% 
+    distinct(state, state_code, state_name) %>% 
+    transmute(
+      state_abb = state,
+      statefips = as.numeric(state_code),
+      state_name = str_to_lower(state_name)
+    ) %>% 
+    filter(statefips <= 56) %>% 
+    as_tibble()
+
+ofw_poverty <- microdata_results %>% 
+  filter(tipc == 1 & indc == 15) %>% 
+  full_join(state_codes, by = "statefips") %>% 
+  mutate(state_status = case_when(
+    state_abb %in% state_ofw_list ~ "One Fair Wage",
+    state_abb %in% state_213_list ~ "$2.13",
+    .default = "Other"
+  )) %>%
+  count(povstat, state_status, wt = perwt0) %>% 
+  mutate(share = n / sum(n), .by = state_status)
+```
+
+```{r qcew}
+read_qcew_est_emp <- function(csv_file) {
+  read_csv(csv_file) %>% 
+  janitor::clean_names() %>% 
+  mutate(
+      statefips = str_sub(series_id, 4, 5),
+      statefips = as.numeric(statefips),
+      annual_2022 = str_replace(annual_2022, "\\(P\\)", ""),
+      annual_2022 = as.numeric(annual_2022)
+  ) %>% 
+  pivot_longer(matches("annual_"), names_to = "year", names_prefix = "annual_") %>% 
+  full_join(state_codes, by = "statefips") %>% 
+  mutate(state_status = case_when(
+    state_abb %in% state_ofw_list ~ "ofw",
+    .default = "other"
+  )) %>% 
+  summarize(value = sum(value), .by = c(year, state_status))
+}
+
+qcew_data <- read_qcew_est_emp("inputs_raw/qcew_state_emp_fs_restaurants.csv") %>% 
+  mutate(outcome = "emp") %>% 
+  bind_rows(read_qcew_est_emp("inputs_raw/qcew_state_est_fs_restaurants.csv")) %>% 
+  mutate(outcome = if_else(is.na(outcome), "est", outcome)) 
+
+qcew_data_2011 <- qcew_data %>% 
+  filter(year == 2011) %>% 
+  select(state_status, value_2011 = value, outcome)
+
+qcew_data %>% 
+  full_join(qcew_data_2011, by = c("state_status", "outcome")) %>% 
+  mutate(
+    pct_change = value / value_2011 - 1,
+    pct_change = scales::label_percent(accuracy = 0.1)(pct_change)
+  ) %>% 
+  filter(year >= 2019) %>% 
+  pivot_wider(
+    id_cols = year, 
+    names_from = c("outcome", "state_status"), 
+    values_from = pct_change
+  )
+
+  
 ```
 
 ```{r mw_sim results}
