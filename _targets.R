@@ -182,6 +182,25 @@ list(
       cd_microdata = results_acs_cd118_refined_microdata,
       state_microdata = results_acs_refined_microdata
     )
+  ),
+  
+  # create CD118-specific tables
+  tar_file(
+    spreadsheet_cd118,
+    create_cd_spreadsheet(results_cd118_summary, 
+                          "outputs/rtwa_17_2028_cd118_tables.xlsx")
+  ),
+  
+  # create additional demographic cuts
+  tar_file(
+    spreadsheet_female,
+    create_demo_spreadsheet(
+      results_acs_refined_microdata,
+      filter_string = "female == 1",
+      omitted_groups = "female",
+      title = "women",
+      output_file = "outputs/rtwa_17_2028_female_tables.xlsx"
+    )
   )
 
 )

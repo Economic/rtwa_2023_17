@@ -60,17 +60,19 @@ create_cd118_results <- function(cd_microdata, state_microdata) {
     ) 
   
   us_values <- cd_values %>% 
-    summarize(across(emp_total|aff_total|dinc_total, sum)) %>% 
+    summarize(across(emp_total|aff_total|dinc_total|n_aff, sum)) %>% 
     mutate(
       dinc_avg = dinc_total / aff_total, 
-      af_share = aff_total / emp_total,
+      aff_share = aff_total / emp_total,
       state_abb = "US",
       state_name = "United States"
     ) 
+  
+  outcomes <- c("aff_total", "aff_share", "dinc_total", "dinc_avg")
     
   cd_values %>%
     # clean results
-    # names
+    # names of states and districts
     inner_join(state_codes, by = "statefips") %>% 
     bind_rows(us_values) %>% 
     mutate(count = sum(n()), .by = statefips) %>% 
@@ -78,9 +80,44 @@ create_cd118_results <- function(cd_microdata, state_microdata) {
       state_abb %in% c("DC", "US")  ~ ".",
       count == 1 ~ "Statewide",
       .default = as.character(cd118)
+    )) %>%
+    # suppress values in accordance with state-specific results
+    # first suppress specific states where very few affected
+    mutate(across(
+      all_of(outcomes),
+      ~ if_else(state_abb %in% c("CA", "HI", "WA"), NA, .x)
+    )) %>%
+    # suppress everything if estimated affected total less than 1500
+    mutate(across(
+      all_of(outcomes),
+      ~ if_else(aff_total < 1500, NA, .x)
+    )) %>%
+    # suppress everything if estimated affected share less than 0.5%
+    mutate(across(
+      all_of(outcomes),
+      ~ if_else(aff_share < 0.005, NA, .x)
+    )) %>%
+    # suppress wage stats if sample size affected < 1000
+    mutate(across(
+      dinc_total|dinc_avg,
+      ~ if_else(n_aff < 1000, NA, .x)
+    )) %>%
+    # round data and deal with units
+    mutate(dinc_total = dinc_total / 10^6) %>%
+    mutate(across(emp_total|aff_total, ~ round(.x / 1000) * 1000)) %>% 
+    mutate(across(
+      emp_total|aff_total|dinc_total|dinc_avg,
+      ~ scales::label_comma(accuracy = 1)(.x)
+    )) %>%
+    mutate(aff_share = scales::label_percent(accuracy = 0.1)(aff_share)) %>% 
+    # format suppressed as stars
+    mutate(across(
+      all_of(outcomes),
+      ~ if_else(is.na(.x), "*", .x)
     )) %>% 
-    mutate(state_name_sort = if_else(state_abb == "US", 0, 1)) %>% 
-    arrange(state_name_sort, state_name, cd118) %>% 
+    # sort data
+    mutate(state_name_sort = if_else(state_abb == "US", 0, 1)) %>%
+    arrange(state_name_sort, state_name, cd118) %>%
     select(
       "State" = state_name,
       "District" = cd118_chr,
@@ -88,15 +125,6 @@ create_cd118_results <- function(cd_microdata, state_microdata) {
       "Total affected" = aff_total,
       "Share affected" = aff_share,
       "Total annual wage change (2023$, millions)" = dinc_total,
-    ) 
-
-  
-  # tar_read(results_acs_cd118_refined_microdata)
-  # 
-  # state_results <- state_microdata %>% 
-  #   mutate(affected = direct6 == 1 | indirect6 == 1) %>% 
-  #   summarize(weighted.mean(affected, w = perwt6), sum(affected * perwt6)) %>% 
-  #   mutate(geo = "state")
-  # 
-  # bind_rows(cd_results, state_results) 
+      "Average annual wage increase of affected workers (2023$)" = dinc_avg
+    )
 }

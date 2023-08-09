@@ -11,7 +11,7 @@ create_state_spreadsheet <- function(data, filename) {
   )
   
   wb <- wb_workbook() %>% 
-    add_intro_worksheet() %>% 
+    add_state_intro_worksheet() %>% 
     add_state_summary_worksheet(data, notes, source)
   
   state_names <- data %>% 
@@ -129,7 +129,7 @@ add_state_worksheet <- function(workbook, state, data, notes, source) {
   
 }
 
-add_intro_worksheet <- function(workbook) {
+add_state_intro_worksheet <- function(workbook) {
   workbook %>% 
     wb_add_worksheet("README") %>%
     wb_add_data(x = "State-specific estimates of the Raise the Wage Act of 2023", startRow = 1) %>% 
