@@ -15,17 +15,35 @@ groups_labels <- c(
   "sectc" = "Sector"
 )
 
-summary_affected <- function(data, group_var, group_label) {
-  cpi_deflator <- 305.535 / 344.789
+summary_affected <- function(data, 
+                             step, 
+                             cpi_step, 
+                             cpi_base, 
+                             group_var, 
+                             group_label) {
+  
+  cpi_deflator <- cpi_base / cpi_step
+  
+  weight_var_name <- paste0("perwt", step)
+  direct_var_name <- paste0("direct", step)
+  indirect_var_name <- paste0("indirect", step)
+  ann_change_var_name <- paste0("d_annual_inc", step)
+  cf_ann_var_name <- paste0("cf_annual_inc", step)
   
   grouped_data <- data %>% 
     mutate(
-      weight = perwt6,
-      d_affected = direct6 == 1,
-      i_affected = indirect6 == 1,
+      # weight = perwt6,
+      # d_affected = direct6 == 1,
+      # i_affected = indirect6 == 1,
+      # affected = d_affected == 1 | i_affected == 1,
+      # ann_wage_change = d_annual_inc6,
+      # cf_annual_wage = cf_annual_inc6
+      weight = .data[[weight_var_name]],
+      d_affected = .data[[direct_var_name]] == 1,
+      i_affected = .data[[indirect_var_name]] == 1,
       affected = d_affected == 1 | i_affected == 1,
-      ann_wage_change = d_annual_inc6,
-      cf_annual_wage = cf_annual_inc6,
+      ann_wage_change = .data[[ann_change_var_name]],
+      cf_annual_wage = .data[[cf_ann_var_name]]
     ) %>% 
     group_by(group = .data[[group_var]]) 
   

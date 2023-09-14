@@ -1,10 +1,18 @@
-create_demo_spreadsheet <- function(microdata, 
+create_demo_spreadsheet <- function(microdata,
+                                    step,
+                                    cpi_step,
+                                    cpi_base,
                                     filter_string, 
                                     omitted_groups, 
                                     title, 
                                     output_file) {
   
-  data <- create_demo_results(microdata, filter_string, omitted_groups)
+  data <- create_demo_results(microdata, 
+                              step,
+                              cpi_step,
+                              cpi_base,
+                              filter_string, 
+                              omitted_groups)
   
   # grab header row numbers too for bold styling loop
   
@@ -33,7 +41,13 @@ create_demo_spreadsheet <- function(microdata,
   output_file
 }
 
-create_demo_results <- function(microdata, filter_string, omitted_groups) {
+create_demo_results <- function(microdata, 
+                                step,
+                                cpi_step,
+                                cpi_base,
+                                filter_string, 
+                                omitted_groups) {
+  
   filters <- rlang::parse_exprs(filter_string)
   
   microdata <- microdata %>% 
@@ -41,7 +55,7 @@ create_demo_results <- function(microdata, filter_string, omitted_groups) {
   
   groups_labels %>% 
     discard_at(omitted_groups) %>% 
-    imap(~ summary_affected(microdata, .y, .x)) %>% 
+    imap(~ summary_affected(microdata, step, cpi_step, cpi_base, .y, .x)) %>% 
     list_rbind() %>% 
     misc_cleanup %>%
     select(-matches("^group_")) %>%
@@ -60,9 +74,9 @@ add_demo_summary_worksheet <- function(workbook,
   
   workbook <- workbook %>%
     wb_add_worksheet("Results", gridLines = FALSE) %>%
-    wb_add_data(x = data, startRow = 2) %>%
+    wb_add_data(x = data, start_row = 2) %>%
     wb_merge_cells(rows = 1, cols = 1:9) %>%
-    wb_add_data(x = sheet_title, startRow = 1) %>%
+    wb_add_data(x = sheet_title, start_row = 1) %>%
     wb_set_col_widths(cols = 2:9, widths = 15) %>%
     wb_set_col_widths(cols = 1, widths = 45) %>% 
     wb_set_row_heights(rows = 1, heights = 30) %>% 
@@ -130,12 +144,12 @@ add_demo_summary_worksheet <- function(workbook,
   
   workbook <- workbook %>% 
     wb_merge_cells(rows = notes_begin, cols = 1:9) %>%
-    wb_add_data(x = notes, startRow = notes_begin) %>% 
+    wb_add_data(x = notes, start_row = notes_begin) %>% 
     wb_add_cell_style(dims = paste0("A", notes_begin), wrapText = "1") %>% 
     wb_set_row_heights(rows = notes_begin, heights = 65) %>% 
     wb_merge_cells(rows = notes_begin + 1, cols = 1:9) %>% 
     wb_add_cell_style(dims = paste0("A", notes_begin + 1), wrapText = "1") %>% 
-    wb_add_data(x = source, startRow = notes_begin + 1)
+    wb_add_data(x = source, start_row = notes_begin + 1)
   
   workbook
 }

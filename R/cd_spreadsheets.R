@@ -30,9 +30,9 @@ add_cd_summary_worksheet <- function(workbook, data, notes, source) {
   
   workbook <- workbook %>% 
     wb_add_worksheet("Results", gridLines = FALSE) %>%
-    wb_add_data(x = cd_summary_data, startRow = 2) %>%
+    wb_add_data(x = cd_summary_data, start_row = 2) %>%
     wb_merge_cells(rows = 1, cols = 1:7) %>%
-    wb_add_data(x = sheet_table_title, startRow = 1) %>%
+    wb_add_data(x = sheet_table_title, start_row = 1) %>%
     wb_set_col_widths(cols = 1, widths = 20) %>% 
     wb_set_col_widths(cols = 2, widths = 15) %>% 
     wb_set_col_widths(cols = 3:7, widths = 20) %>%
@@ -75,12 +75,12 @@ add_cd_summary_worksheet <- function(workbook, data, notes, source) {
   
   workbook <- workbook %>% 
     wb_merge_cells(rows = 440, cols = 1:7) %>%
-    wb_add_data(x = notes, startRow = 440) %>% 
+    wb_add_data(x = notes, start_row = 440) %>% 
     wb_add_cell_style(dims = "A440", wrapText = "1") %>% 
     wb_set_row_heights(rows = 440, heights = 70) %>% 
     wb_merge_cells(rows = 441, cols = 1:7) %>% 
     wb_add_cell_style(dims = "A441", wrapText = "1") %>% 
-    wb_add_data(x = source, startRow = 441)
+    wb_add_data(x = source, start_row = 441)
   
   workbook
 }
@@ -88,23 +88,23 @@ add_cd_summary_worksheet <- function(workbook, data, notes, source) {
 add_cd_intro_worksheet <- function(workbook) {
   workbook %>% 
     wb_add_worksheet("README") %>%
-    wb_add_data(x = "118th Congressional District-specific estimates of the Raise the Wage Act of 2023", startRow = 1) %>% 
-    wb_add_data(x = "Economic Policy Institute, August 2023", startRow = 2) %>% 
-    wb_add_data(x = "This spreadsheet contains Congressional District-specific estimates of the effects of the Raise the Wage Act of 2023, as estimated by the Economic Policy Institute Minimum Wage Simulation Model.", startRow = 4) %>% 
-    wb_add_data(x = "Estimates for some areas are unavailable because of the small number of workers affected by the policy in these states.", startRow = 6) %>% 
-    wb_add_data(x = "CITATIONS", startRow = 8) %>% 
-    wb_add_data(x = "Please cite the estimates in this spreadsheet as \"Estimated effects of Raise the Wage Act of 2023,\" Economic Policy Institute Minimum Wage Simulation Model, August 2023.", startRow = 9) %>% 
-    wb_add_data(x = "ASSUMPTIONS", startRow = 11) %>% 
-    wb_add_data(x = "The estimates are for the year 2028, when the policy's regular minimum wage is $17 and the tipped minimum wage is $15.", startRow = 12) %>% 
-    wb_add_data(x = "The underlying wage distribution is based on the 2022 Current Population Survey.", startRow = 13) %>%
-    wb_add_data(x = "The underlying geographic data is based on the 2015-2019 American Community Survey (ACS), reweighted to match 2019 ACS-based gender-specific employment counts of 118th Congressional Districts.", startRow = 14) %>%
-    wb_add_data(x = "The simulation assumes nominal wage growth will be at a 5.0% annual rate between 2022 and 2023, and at a annual rate of 0.5% plus projected CPI growth in subsequent years.", startRow = 15) %>% 
-    wb_add_data(x = "The simulation accounts for estimated effects of projected state and local minimum wages between 2023 and 2028.", startRow = 16) %>%
-    wb_add_data(x = "DOCUMENTATION", startRow = 18) %>% 
-    wb_add_data(x = "To read more about the EPI Minimum Wage Simulation Model, see", startRow = 19) %>% 
-    wb_add_data(x = "* the description in Cooper, Mokhiber, Zipperer (2019): https://www.epi.org/publication/minimum-wage-simulation-model-technical-methodology/", startRow = 20) %>% 
-    wb_add_data(x = "* a Stata implementation of the simulation model: https://github.com/Economic/min_wage_sim", startRow = 21) %>% 
-    wb_add_data(x = "* the code used to produce these estimates: https://github.com/Economic/rtwa_2023_17", startRow = 22) %>% 
+    wb_add_data(x = "118th Congressional District-specific estimates of the Raise the Wage Act of 2023", start_row = 1) %>% 
+    wb_add_data(x = "Economic Policy Institute, August 2023", start_row = 2) %>% 
+    wb_add_data(x = "This spreadsheet contains Congressional District-specific estimates of the effects of the Raise the Wage Act of 2023, as estimated by the Economic Policy Institute Minimum Wage Simulation Model.", start_row = 4) %>% 
+    wb_add_data(x = "Estimates for some areas are unavailable because of the small number of workers affected by the policy in these states.", start_row = 6) %>% 
+    wb_add_data(x = "CITATIONS", start_row = 8) %>% 
+    wb_add_data(x = "Please cite the estimates in this spreadsheet as \"Estimated effects of Raise the Wage Act of 2023,\" Economic Policy Institute Minimum Wage Simulation Model, August 2023.", start_row = 9) %>% 
+    wb_add_data(x = "ASSUMPTIONS", start_row = 11) %>% 
+    wb_add_data(x = "The estimates are for the year 2028, when the policy's regular minimum wage is $17 and the tipped minimum wage is $15.", start_row = 12) %>% 
+    wb_add_data(x = "The underlying wage distribution is based on the 2022 Current Population Survey.", start_row = 13) %>%
+    wb_add_data(x = "The underlying geographic data is based on the 2015-2019 American Community Survey (ACS), reweighted to match 2019 ACS-based gender-specific employment counts of 118th Congressional Districts.", start_row = 14) %>%
+    wb_add_data(x = "The simulation assumes nominal wage growth will be at a 5.0% annual rate between 2022 and 2023, and at a annual rate of 0.5% plus projected CPI growth in subsequent years.", start_row = 15) %>% 
+    wb_add_data(x = "The simulation accounts for estimated effects of projected state and local minimum wages between 2023 and 2028.", start_row = 16) %>%
+    wb_add_data(x = "DOCUMENTATION", start_row = 18) %>% 
+    wb_add_data(x = "To read more about the EPI Minimum Wage Simulation Model, see", start_row = 19) %>% 
+    wb_add_data(x = "* the description in Cooper, Mokhiber, Zipperer (2019): https://www.epi.org/publication/minimum-wage-simulation-model-technical-methodology/", start_row = 20) %>% 
+    wb_add_data(x = "* a Stata implementation of the simulation model: https://github.com/Economic/min_wage_sim", start_row = 21) %>% 
+    wb_add_data(x = "* the code used to produce these estimates: https://github.com/Economic/rtwa_2023_17", start_row = 22) %>% 
     wb_add_font(dims = "A1", size = "15", bold = TRUE) %>% 
     wb_set_col_widths(cols = 1, widths = 175) %>% 
     wb_add_font(dims = "A8", bold = TRUE) %>%

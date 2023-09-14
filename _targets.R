@@ -122,7 +122,6 @@ list(
                    local_mw_file = substate_mw_data,
                    .outputs = "outputs/model_run_microdata_acs_state_rtwa_17_2028_ofw.dta")
   ),
-  
   # run ACS CD 118 model
   tar_file(
     acs_cd118_rtwa_17_2028_ofw,
@@ -138,6 +137,33 @@ list(
                    .outputs = "outputs/model_run_microdata_acs_cd118_rtwa_17_2028_ofw.dta")
   ),
   
+  # CR models
+  tar_file(
+    cps_cr_11_2028,
+    do_file_target(dofile_run_model,
+                   microdata_file = cps_base,
+                   data_stub = "cps",
+                   policy_name = "cr_11_2028",
+                   policy_schedule_file = policy_schedules,
+                   cpi_file = cpi_proj_data,
+                   pop_file = pop_proj_data,
+                   state_mw_file = state_mw_data,
+                   .outputs = "outputs/model_run_microdata_cps_cr_11_2028.dta")
+  ),
+  tar_file(
+    acs_state_cr_11_2028,
+    do_file_target(dofile_run_model,
+                   microdata_file = acs_state_base,
+                   data_stub = "acs_state",
+                   policy_name = "cr_11_2028",
+                   policy_schedule_file = policy_schedules,
+                   cpi_file = cpi_proj_data,
+                   pop_file = pop_proj_data,
+                   state_mw_file = state_mw_data,
+                   local_mw_file = substate_mw_data,
+                   .outputs = "outputs/model_run_microdata_acs_state_cr_11_2028.dta")
+  ),
+  
   # convert dta to feather
   tar_format_feather(
     results_cps_raw_microdata, 
@@ -151,6 +177,14 @@ list(
     results_acs_cd118_raw_microdata, 
     convert_from_dta(acs_cd118_rtwa_17_2028_ofw)
   ),
+  tar_format_feather(
+    results_cps_raw_microdata_cr, 
+    convert_from_dta(cps_cr_11_2028)
+  ),
+  tar_format_feather(
+    results_acs_raw_microdata_cr, 
+    convert_from_dta(acs_state_cr_11_2028)
+  ),
   
   # pin ACS workforce totals to ACS and refine model results
   tar_format_feather(
@@ -161,11 +195,18 @@ list(
     results_acs_cd118_refined_microdata, 
     prep_acs_results(results_acs_cd118_raw_microdata, results_cps_raw_microdata)
   ),
+  tar_format_feather(
+    results_acs_refined_microdata_cr, 
+    prep_acs_results(results_acs_raw_microdata_cr, results_cps_raw_microdata_cr)
+  ),
   
   # create state-specific results
   tar_target(
     results_state_summary, 
-    create_state_results(results_acs_refined_microdata)
+    create_state_results(results_acs_refined_microdata, 
+                         step = 6,
+                         cpi_step = 344.789,
+                         cpi_base = 305.535)
   ),
   
   # create state-specific and national tables
@@ -173,6 +214,21 @@ list(
     spreadsheet_state,
     create_state_spreadsheet(results_state_summary, 
                              "outputs/rtwa_17_2028_state_tables.xlsx")
+  ),
+  
+  # create state-specific results for CR
+  tar_target(
+    results_state_summary_cr, 
+    create_state_results(results_acs_refined_microdata_cr, 
+                         step = 5,
+                         cpi_step = 341.011,
+                         cpi_base = 305.535)
+  ),
+  # create state-specific and national tables for CR
+  tar_file(
+    spreadsheet_state_cr,
+    create_state_spreadsheet(results_state_summary_cr, 
+                             "outputs/cr_11_2028_state_tables.xlsx")
   ),
   
   # create CD118-specific results
@@ -196,6 +252,9 @@ list(
     spreadsheet_female,
     create_demo_spreadsheet(
       results_acs_refined_microdata,
+      step = 6,
+      cpi_step = 344.789,
+      cpi_base = 305.535,
       filter_string = "female == 1",
       omitted_groups = "female",
       title = "women",

@@ -56,9 +56,9 @@ add_state_worksheet <- function(workbook, state, data, notes, source) {
   fill_color <- "ffebf2fa"
   workbook <- workbook %>%
     wb_add_worksheet(worksheet_name, gridLines = FALSE) %>%
-    wb_add_data(x = state_data, startRow = 2) %>%
+    wb_add_data(x = state_data, start_row = 2) %>%
     wb_merge_cells(rows = 1, cols = 1:9) %>%
-    wb_add_data(x = sheet_table_title, startRow = 1) %>%
+    wb_add_data(x = sheet_table_title, start_row = 1) %>%
     wb_set_col_widths(cols = 2:9, widths = 15) %>%
     wb_set_col_widths(cols = 1, widths = 45) %>% 
     wb_set_row_heights(rows = 1, heights = 30) %>% 
@@ -118,12 +118,12 @@ add_state_worksheet <- function(workbook, state, data, notes, source) {
   
   workbook <- workbook %>% 
     wb_merge_cells(rows = 76, cols = 1:9) %>%
-    wb_add_data(x = notes, startRow = 76) %>% 
+    wb_add_data(x = notes, start_row = 76) %>% 
     wb_add_cell_style(dims = "A76", wrapText = "1") %>% 
     wb_set_row_heights(rows = 76, heights = 65) %>% 
     wb_merge_cells(rows = 77, cols = 1:9) %>% 
     wb_add_cell_style(dims = "A77", wrapText = "1") %>% 
-    wb_add_data(x = source, startRow = 77)
+    wb_add_data(x = source, start_row = 77)
   
   workbook
   
@@ -132,22 +132,22 @@ add_state_worksheet <- function(workbook, state, data, notes, source) {
 add_state_intro_worksheet <- function(workbook) {
   workbook %>% 
     wb_add_worksheet("README") %>%
-    wb_add_data(x = "State-specific estimates of the Raise the Wage Act of 2023", startRow = 1) %>% 
-    wb_add_data(x = "Economic Policy Institute, July 2023", startRow = 2) %>% 
-    wb_add_data(x = "This spreadsheet contains state-specific estimates of the effects of the Raise the Wage Act of 2023, as estimated by the Economic Policy Institute Minimum Wage Simulation Model.", startRow = 4) %>% 
-    wb_add_data(x = "Detailed estimates for California, District of Columbia, Hawaii, and Washington are unavailable because of the small number of workers affected by the policy in these states.", startRow = 6) %>% 
-    wb_add_data(x = "CITATIONS", startRow = 8) %>% 
-    wb_add_data(x = "Please cite the estimates in this spreadsheet as \"Estimated effects of Raise the Wage Act of 2023,\" Economic Policy Institute Minimum Wage Simulation Model, July 2023.", startRow = 9) %>% 
-    wb_add_data(x = "ASSUMPTIONS", startRow = 11) %>% 
-    wb_add_data(x = "The estimates are for the year 2028, when the policy's regular minimum wage is $17 and the tipped minimum wage is $15.", startRow = 12) %>% 
-    wb_add_data(x = "The underlying wage distribution is based on the 2022 Current Population Survey.", startRow = 13) %>%
-    wb_add_data(x = "The simulation assumes nominal wage growth will be at a 5.0% annual rate between 2022 and 2023, and at a annual rate of 0.5% plus projected CPI growth in subsequent years.", startRow = 14) %>% 
-    wb_add_data(x = "The simulation accounts for estimated effects of projected state and local minimum wages between 2023 and 2028.", startRow = 15) %>% 
-    wb_add_data(x = "DOCUMENTATION", startRow = 17) %>% 
-    wb_add_data(x = "To read more about the EPI Minimum Wage Simulation Model, see", startRow = 18) %>% 
-    wb_add_data(x = "* the description in Cooper, Mokhiber, Zipperer (2019): https://www.epi.org/publication/minimum-wage-simulation-model-technical-methodology/", startRow = 19) %>% 
-    wb_add_data(x = "* a Stata implementation of the simulation model: https://github.com/Economic/min_wage_sim", startRow = 20) %>% 
-    wb_add_data(x = "* the code used to produce these estimates: https://github.com/Economic/rtwa_2023_17", startRow = 21) %>% 
+    wb_add_data(x = "State-specific estimates of the Raise the Wage Act of 2023", start_row = 1) %>% 
+    wb_add_data(x = "Economic Policy Institute, July 2023", start_row = 2) %>% 
+    wb_add_data(x = "This spreadsheet contains state-specific estimates of the effects of the Raise the Wage Act of 2023, as estimated by the Economic Policy Institute Minimum Wage Simulation Model.", start_row = 4) %>% 
+    wb_add_data(x = "Detailed estimates for California, District of Columbia, Hawaii, and Washington are unavailable because of the small number of workers affected by the policy in these states.", start_row = 6) %>% 
+    wb_add_data(x = "CITATIONS", start_row = 8) %>% 
+    wb_add_data(x = "Please cite the estimates in this spreadsheet as \"Estimated effects of Raise the Wage Act of 2023,\" Economic Policy Institute Minimum Wage Simulation Model, July 2023.", start_row = 9) %>% 
+    wb_add_data(x = "ASSUMPTIONS", start_row = 11) %>% 
+    wb_add_data(x = "The estimates are for the year 2028, when the policy's regular minimum wage is $17 and the tipped minimum wage is $15.", start_row = 12) %>% 
+    wb_add_data(x = "The underlying wage distribution is based on the 2022 Current Population Survey.", start_row = 13) %>%
+    wb_add_data(x = "The simulation assumes nominal wage growth will be at a 5.0% annual rate between 2022 and 2023, and at a annual rate of 0.5% plus projected CPI growth in subsequent years.", start_row = 14) %>% 
+    wb_add_data(x = "The simulation accounts for estimated effects of projected state and local minimum wages between 2023 and 2028.", start_row = 15) %>% 
+    wb_add_data(x = "DOCUMENTATION", start_row = 17) %>% 
+    wb_add_data(x = "To read more about the EPI Minimum Wage Simulation Model, see", start_row = 18) %>% 
+    wb_add_data(x = "* the description in Cooper, Mokhiber, Zipperer (2019): https://www.epi.org/publication/minimum-wage-simulation-model-technical-methodology/", start_row = 19) %>% 
+    wb_add_data(x = "* a Stata implementation of the simulation model: https://github.com/Economic/min_wage_sim", start_row = 20) %>% 
+    wb_add_data(x = "* the code used to produce these estimates: https://github.com/Economic/rtwa_2023_17", start_row = 21) %>% 
     wb_add_font(dims = "A1", size = "15", bold = TRUE) %>% 
     wb_set_col_widths(cols = 1, widths = 175) %>% 
     wb_add_font(dims = "A8", bold = TRUE) %>%
@@ -182,9 +182,9 @@ add_state_summary_worksheet <- function(workbook, data, notes, source) {
   
   workbook <- workbook %>% 
     wb_add_worksheet("State summary", gridLines = FALSE) %>%
-    wb_add_data(x = state_summary_data, startRow = 2) %>%
+    wb_add_data(x = state_summary_data, start_row = 2) %>%
     wb_merge_cells(rows = 1, cols = 1:11) %>%
-    wb_add_data(x = sheet_table_title, startRow = 1) %>%
+    wb_add_data(x = sheet_table_title, start_row = 1) %>%
     wb_set_col_widths(cols = 2:11, widths = 15) %>%
     wb_set_col_widths(cols = 1, widths = 45) %>% 
     wb_set_row_heights(rows = 1, heights = 30) %>% 
@@ -226,12 +226,12 @@ add_state_summary_worksheet <- function(workbook, data, notes, source) {
   
   workbook <- workbook %>% 
     wb_merge_cells(rows = 55, cols = 1:11) %>%
-    wb_add_data(x = notes, startRow = 55) %>% 
+    wb_add_data(x = notes, start_row = 55) %>% 
     wb_add_cell_style(dims = "A55", wrapText = "1") %>% 
     wb_set_row_heights(rows = 55, heights = 65) %>% 
     wb_merge_cells(rows = 56, cols = 1:11) %>% 
     wb_add_cell_style(dims = "A56", wrapText = "1") %>% 
-    wb_add_data(x = source, startRow = 56)
+    wb_add_data(x = source, start_row = 56)
   
   workbook
 }
